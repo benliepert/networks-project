@@ -27,5 +27,5 @@ int create_connection()
 
 int main()
 {
-    int socket = create_connection()
+    int socket = create_connection();
 }

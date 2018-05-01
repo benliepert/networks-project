@@ -26,7 +26,6 @@ int create_connection()
 {
     // dunno about these guys, needed for accept(), look in beej later
     struct sockaddr_storage their_addr;
-    socklen_t addr_size;
 
     // create a struct for our address info
     struct addrinfo hints, *res;
@@ -49,6 +48,7 @@ int create_connection()
         printf("socket error %i\n", sockfd);
 
     // bind socket to the port we passed in to getaddrinfo()
+    // this is so that we can keep listening on this port
     int bind(sockfd, res->ai_addr, res->ai_addrlen);
     if (bind == -1)
         printf("bind error %i\n", bind);
@@ -59,10 +59,10 @@ int create_connection()
         printf("listen error %i\n", listen);
 
     // accept incoming connections
-    addr_size = sizeof(their_addr);
+    socklen_t addr_size = sizeof(their_addr);
     int new_sockfd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
 
-    //freeaddrinfo(res); // free the linked list
+    freeaddrinfo(res); // free the linked list
 
     // return the socket for later calls
     return new_sockfd;
