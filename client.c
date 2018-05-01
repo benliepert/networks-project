@@ -16,3 +16,16 @@ establish tcp connection
 send messages
 create a case for ending the connection
 */
+
+//prototypes
+int create_connection();
+
+int create_connection()
+{
+    
+}
+
+int main()
+{
+    int socket = create_connection()
+}
