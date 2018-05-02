@@ -8,7 +8,7 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
-//#include <stdlib.h>
+#include <stdlib.h>
 
 #define MYPORT "54001"
 #define BACKLOG 10
@@ -23,6 +23,7 @@ wait for messages
 
 // prototypes
 int create_connection();
+typedef struct addrinfo addrinfo;
 
 int create_connection()
 {
@@ -37,7 +38,7 @@ int create_connection()
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
     // get our socket info
-    int status;
+    int status; // need to store it for error reporting
     if ((status = getaddrinfo(NULL, MYPORT, &hints, &res)) != 0)
     {
         fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
@@ -55,6 +56,7 @@ int create_connection()
     if (bindResult == -1)
         printf("bind error %i\n", bindResult);
 
+    int yes = 1;
     struct addrinfo *p;
     for(p = res; p != NULL; p = p->ai_next) {
         listening = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
@@ -71,12 +73,19 @@ int create_connection()
         break;
     }
 
-    freeaddrinfo(res); // according to beej we do this here
-
-    // listen on that port
-    int listenResult = listen(listening, BACKLOG);
-    if (listenResult == -1)
-        printf("listen error %i\n", listenResult);
+    // if we got here, it means we didn't get bound
+    if (p == NULL) 
+    {
+        fprintf(stderr, "selectserver: failed to bind\n");
+        exit(2);
+    }
+    freeaddrinfo(res); // all done with this
+    // listen
+    if (listen(listening, 10) == -1) 
+    {
+        perror("listen");
+        exit(3);
+    }
 
     //==================================================================================
     // SELECT STUFF
@@ -95,7 +104,7 @@ int create_connection()
 
         for (int i = 0; i < socketCount; i++)
         {
-            int currentSocket = copy.fd_array[i];
+            //int currentSocket = copy.fd_array[i];
         }   
     }
 
