@@ -1,12 +1,14 @@
 // custom IRC server
 // created by Gezim Saciri, Ben Leipert, Josh Blaz
-
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/select.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 
 #define MYPORT "54001"
 #define BACKLOG 10
@@ -43,24 +45,48 @@ int create_connection()
     }
 
     // create a socket
-    int sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (sockfd == -1)
-        printf("socket error %i\n", sockfd);
+    int listening = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    if (listening == -1)
+        printf("socket error %i\n", listening);
 
     // bind socket to the port we passed in to getaddrinfo()
     // this is so that we can keep listening on this port
-    int bind(sockfd, res->ai_addr, res->ai_addrlen);
-    if (bind == -1)
-        printf("bind error %i\n", bind);
+    int bindResult = bind(listening, res->ai_addr, res->ai_addrlen);
+    if (bindResult == -1)
+        printf("bind error %i\n", bindResult);
 
     // listen on that port
-    int listen(sockfd, BACKLOG);
-    if (listen == -1)
-        printf("listen error %i\n", listen);
+    int listenResult = listen(listening, BACKLOG);
+    if (listenResult == -1)
+        printf("listen error %i\n", listenResult);
+
+    //==================================================================================
+    // SELECT STUFF
+
+    fd_set master;
+    FD_ZERO(&master);
+    FD_SET(listening, &master);
+
+    bool running = true;
+    while(running)
+    {
+        fd_set copy = master;
+
+        int socketCount = select(0, &copy, NULL, NULL, NULL);
+
+        for (int i = 0; i < socketCount; i++)
+        {
+            int currentSocket = copy.fd_array[i];
+        }   
+    }
+
 
     // accept incoming connections
     socklen_t addr_size = sizeof(their_addr);
-    int new_sockfd = accept(sockfd, (struct sockaddr *)&their_addr, &addr_size);
+    int new_sockfd = accept(listening, (struct sockaddr *)&their_addr, &addr_size);
+
+
+    //==================================================================================
 
     freeaddrinfo(res); // free the linked list
 
