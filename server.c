@@ -55,6 +55,24 @@ int create_connection()
     if (bindResult == -1)
         printf("bind error %i\n", bindResult);
 
+    struct addrinfo *p;
+    for(p = res; p != NULL; p = p->ai_next) {
+        listening = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (listening < 0) { 
+            continue;
+        }
+        // lose the pesky "address already in use" error message
+        setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+        if (bind(listening, p->ai_addr, p->ai_addrlen) < 0)
+        {
+            close(listening);
+            continue;
+        }
+        break;
+    }
+
+    freeaddrinfo(res); // according to beej we do this here
+
     // listen on that port
     int listenResult = listen(listening, BACKLOG);
     if (listenResult == -1)
@@ -66,13 +84,14 @@ int create_connection()
     fd_set master;
     FD_ZERO(&master);
     FD_SET(listening, &master);
+    
 
     bool running = true;
     while(running)
     {
         fd_set copy = master;
 
-        int socketCount = select(0, &copy, NULL, NULL, NULL);
+        int socketCount = select(0, &copy, NULL, NULL, NULL); //setting last val to NULL means it will never timeout
 
         for (int i = 0; i < socketCount; i++)
         {
@@ -88,9 +107,7 @@ int create_connection()
 
     //==================================================================================
 
-    freeaddrinfo(res); // free the linked list
-
-    // return the socket for later calls
+    // return the socket for later calls ? 
     return new_sockfd;
 }
 
