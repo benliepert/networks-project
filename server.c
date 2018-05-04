@@ -93,19 +93,57 @@ int create_connection()
     fd_set master;
     FD_ZERO(&master);
     FD_SET(listening, &master);
-    
 
-    bool running = true;
-    while(running)
+    int fdmax = listening;
+    int i, j;
+    
+    for(;;)
     {
         fd_set copy = master;
 
-        int socketCount = select(0, &copy, NULL, NULL, NULL); //setting last val to NULL means it will never timeout
+       if(select(fdmax+1, &copy, NULL, NULL, NULL) = -1) //setting last val to NULL means it will never timeout  
+       {
+           perror("select");
+           exit(4);
+       }
 
-        for (int i = 0; i < socketCount; i++)
-        {
-            //int currentSocket = copy.fd_array[i];
-        }   
+       for (i = 0; i <= fdmax; i++)
+       {
+           if(FD_ISSET(i, &copy))
+           {
+               if(i == listening)
+               {
+                   //accept new connection
+                   struct sockaddr_storage remoteaddr;
+                   socklet_t addrlen = sizeof remoteaddr;
+                   int newfd = accept(listening, (struct sockaddr *)&remoteaddr, &addrlen);
+                   if(newfd == -1)
+                   {
+                       perror("accept");
+                   }
+                   else
+                   {
+                       FD_SET(newfd, &master);
+                       if (newfd > fdmax)
+                       {
+                           fdmax = newfd;
+                       }
+                       char remoteIP[INET6_ADDRSTRLEN];
+                       printf("selectserver: new connection from %s on "
+                            "socked %d \n",
+                            inet_ntop(remoteaddr.ss_family,
+                                get_in_addr((struct sockaddr *)&remoteaddr),
+                                remoteIP, INET6_ADDRSTRLEN),
+                            newfd);
+                   }
+               }
+               else
+               {
+                   //handle client data
+               }
+           }
+       }
+
     }
 
 
