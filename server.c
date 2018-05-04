@@ -13,14 +13,6 @@
 #define MYPORT "54001"
 #define BACKLOG 10
 
-/*
-establish socket connection
-bind to the socket
-listen to the socket
-master file descriptor
-wait for messages
-*/
-
 // prototypes
 int create_connection();
 typedef struct addrinfo addrinfo;
@@ -58,9 +50,11 @@ int create_connection()
 
     int yes = 1;
     struct addrinfo *p;
-    for(p = res; p != NULL; p = p->ai_next) {
+    for (p = res; p != NULL; p = p->ai_next)
+    {
         listening = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (listening < 0) { 
+        if (listening < 0)
+        {
             continue;
         }
         // lose the pesky "address already in use" error message
@@ -74,14 +68,14 @@ int create_connection()
     }
 
     // if we got here, it means we didn't get bound
-    if (p == NULL) 
+    if (p == NULL)
     {
         fprintf(stderr, "selectserver: failed to bind\n");
         exit(2);
     }
     freeaddrinfo(res); // all done with this
     // listen
-    if (listen(listening, 10) == -1) 
+    if (listen(listening, 10) == -1)
     {
         perror("listen");
         exit(3);
@@ -96,65 +90,96 @@ int create_connection()
 
     int fdmax = listening;
     int i, j;
-    
-    for(;;)
+
+    for (;;)
     {
         fd_set copy = master;
 
-       if(select(fdmax+1, &copy, NULL, NULL, NULL) = -1) //setting last val to NULL means it will never timeout  
-       {
-           perror("select");
-           exit(4);
-       }
+        if (select(fdmax + 1, &copy, NULL, NULL, NULL) = -1) //setting last val to NULL means it will never timeout
+        {
+            perror("select");
+            exit(4);
+        }
 
-       for (i = 0; i <= fdmax; i++)
-       {
-           if(FD_ISSET(i, &copy))
-           {
-               if(i == listening)
-               {
-                   //accept new connection
-                   struct sockaddr_storage remoteaddr;
-                   socklet_t addrlen = sizeof remoteaddr;
-                   int newfd = accept(listening, (struct sockaddr *)&remoteaddr, &addrlen);
-                   if(newfd == -1)
-                   {
-                       perror("accept");
-                   }
-                   else
-                   {
-                       FD_SET(newfd, &master);
-                       if (newfd > fdmax)
-                       {
-                           fdmax = newfd;
-                       }
-                       char remoteIP[INET6_ADDRSTRLEN];
-                       printf("selectserver: new connection from %s on "
-                            "socked %d \n",
-                            inet_ntop(remoteaddr.ss_family,
-                                get_in_addr((struct sockaddr *)&remoteaddr),
-                                remoteIP, INET6_ADDRSTRLEN),
-                            newfd);
-                   }
-               }
-               else
-               {
-                   //handle client data
-               }
-           }
-       }
-
+        for (i = 0; i <= fdmax; i++)
+        {
+            if (FD_ISSET(i, &copy))
+            {
+                if (i == listening)
+                {
+                    //accept new connection
+                    struct sockaddr_storage remoteaddr;
+                    socklet_t addrlen = sizeof remoteaddr;
+                    int newfd = accept(listening, (struct sockaddr *)&remoteaddr, &addrlen);
+                    if (newfd == -1)
+                    {
+                        perror("accept");
+                    }
+                    else
+                    {
+                        FD_SET(newfd, &master);
+                        if (newfd > fdmax)
+                        {
+                            fdmax = newfd;
+                        }
+                        char remoteIP[INET6_ADDRSTRLEN];
+                        printf("selectserver: new connection from %s on "
+                               "socked %d \n",
+                               inet_ntop(remoteaddr.ss_family,
+                                         get_in_addr((struct sockaddr *)&remoteaddr),
+                                         remoteIP, INET6_ADDRSTRLEN),
+                               newfd);
+                    }
+                }
+                else
+                {
+                    // handle data from a client
+                    if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0)
+                    {
+                        // got error or connection closed by client
+                        if (nbytes == 0)
+                        {
+                            // connection closed
+                            printf("selectserver: socket %d hung up\n", i);
+                        }
+                        else
+                        {
+                            perror("recv");
+                        }
+                        close(i);           // bye!
+                        FD_CLR(i, &master); // remove from master set
+                    }
+                    else
+                    {
+                        // we got some data from a client
+                        for (j = 0; j <= fdmax; j++)
+                        {
+                            // send to everyone!
+                            if (FD_ISSET(j, &master))
+                            {
+                                // except the listener and ourselves
+                                if (j != listener && j != i)
+                                {
+                                    if (send(j, buf, nbytes, 0) == -1)
+                                    {
+                                        perror("send");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-
 
     // accept incoming connections
     socklen_t addr_size = sizeof(their_addr);
     int new_sockfd = accept(listening, (struct sockaddr *)&their_addr, &addr_size);
 
-
     //==================================================================================
 
-    // return the socket for later calls ? 
+    // return the socket for later calls ?
     return new_sockfd;
 }
 
