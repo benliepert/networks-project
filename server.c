@@ -5,25 +5,32 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/select.h>
+#include <unistd.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #define MYPORT "54001"
-#define BACKLOG 10
 
-// prototypes
-int create_connection();
-typedef struct addrinfo addrinfo;
-
-int create_connection()
+void *get_in_addr(struct sockaddr *sa)
 {
-    // dunno about these guys, needed for accept(), look in beej later
-    struct sockaddr_storage their_addr;
+    if (sa->sa_family == AF_INET)
+    {
+        return &(((struct sockaddr_in *)sa)->sin_addr);
+    }
+    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+}
+
+int main()
+{
+    //=================CREATE LISTENING SOCKET==========================================
 
     // create a struct for our address info
-    struct addrinfo hints, *res;
+    struct addrinfo hints, *res, *p;
+
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;     // IPv4 or v6
     hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
@@ -37,19 +44,16 @@ int create_connection()
         exit(1);
     }
 
-    // create a socket
+    // create a socket to listen on
     int listening = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     if (listening == -1)
         printf("socket error %i\n", listening);
 
-    // bind socket to the port we passed in to getaddrinfo()
-    // this is so that we can keep listening on this port
+    // bind socket to the port we passed in to getaddrinfo() so we can keep listening
     int bindResult = bind(listening, res->ai_addr, res->ai_addrlen);
     if (bindResult == -1)
         printf("bind error %i\n", bindResult);
 
-    int yes = 1;
-    struct addrinfo *p;
     for (p = res; p != NULL; p = p->ai_next)
     {
         listening = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
@@ -57,8 +61,11 @@ int create_connection()
         {
             continue;
         }
+
+        int yes = 1; // for setsockopt()
         // lose the pesky "address already in use" error message
         setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
         if (bind(listening, p->ai_addr, p->ai_addrlen) < 0)
         {
             close(listening);
@@ -66,14 +73,15 @@ int create_connection()
         }
         break;
     }
-
-    // if we got here, it means we didn't get bound
+    // failed to bind
     if (p == NULL)
     {
         fprintf(stderr, "selectserver: failed to bind\n");
         exit(2);
     }
-    freeaddrinfo(res); // all done with this
+
+    freeaddrinfo(res);
+
     // listen
     if (listen(listening, 10) == -1)
     {
@@ -81,35 +89,36 @@ int create_connection()
         exit(3);
     }
 
-    //==================================================================================
-    // SELECT STUFF
+    //===================SELECT FOR MULTI I/O===========================================
 
-    fd_set master;
+    fd_set master; // master file descriptor list
     FD_ZERO(&master);
     FD_SET(listening, &master);
 
-    int fdmax = listening;
-    int i, j;
+    int fdmax = listening; // biggest file descriptor
+    int i, j, nbytes;
+    char buf[256]; // buffer for client data
 
     for (;;)
     {
         fd_set copy = master;
-
-        if (select(fdmax + 1, &copy, NULL, NULL, NULL) = -1) //setting last val to NULL means it will never timeout
+        if (select(fdmax + 1, &copy, NULL, NULL, NULL) == -1) // setting last val to NULL means no timeout
         {
             perror("select");
             exit(4);
         }
-
+        // run through the existing connections looking for data to read
         for (i = 0; i <= fdmax; i++)
         {
             if (FD_ISSET(i, &copy))
             {
+                // found data to read from connection i
                 if (i == listening)
                 {
-                    //accept new connection
-                    struct sockaddr_storage remoteaddr;
-                    socklet_t addrlen = sizeof remoteaddr;
+                    // handle new connection
+                    struct sockaddr_storage remoteaddr;  // client address
+                    socklen_t addrlen = sizeof remoteaddr;
+
                     int newfd = accept(listening, (struct sockaddr *)&remoteaddr, &addrlen);
                     if (newfd == -1)
                     {
@@ -136,7 +145,7 @@ int create_connection()
                     // handle data from a client
                     if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0)
                     {
-                        // got error or connection closed by client
+                        // got connection closed or eror by client
                         if (nbytes == 0)
                         {
                             // connection closed
@@ -146,7 +155,7 @@ int create_connection()
                         {
                             perror("recv");
                         }
-                        close(i);           // bye!
+                        close(i);
                         FD_CLR(i, &master); // remove from master set
                     }
                     else
@@ -154,11 +163,11 @@ int create_connection()
                         // we got some data from a client
                         for (j = 0; j <= fdmax; j++)
                         {
-                            // send to everyone!
+                            // send to everyone...
                             if (FD_ISSET(j, &master))
                             {
-                                // except the listener and ourselves
-                                if (j != listener && j != i)
+                                // except the listening and ourselves
+                                if (j != listening && j != i)
                                 {
                                     if (send(j, buf, nbytes, 0) == -1)
                                     {
@@ -168,22 +177,9 @@ int create_connection()
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-
-    // accept incoming connections
-    socklen_t addr_size = sizeof(their_addr);
-    int new_sockfd = accept(listening, (struct sockaddr *)&their_addr, &addr_size);
-
-    //==================================================================================
-
-    // return the socket for later calls ?
-    return new_sockfd;
-}
-
-int main()
-{
-    int socket = create_connection();
+                } // END handle data from client
+            }     // END got new incoming connection
+        }         // END looping through file descriptors
+    }             // END for(;;)
+    return 0;
 }
