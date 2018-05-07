@@ -1,5 +1,3 @@
-// custom IRC server
-// created by Gezim Saciri, Ben Leipert, Josh Blaz
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -15,12 +13,13 @@
 
 #define MYPORT "54001"
 
-void *get_in_addr(struct sockaddr *sa)
+void(*get_in_addr(struct sockaddr *sa))
 {
     if (sa->sa_family == AF_INET)
     {
         return &(((struct sockaddr_in *)sa)->sin_addr);
     }
+
     return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
@@ -112,11 +111,11 @@ int main()
         {
             if (FD_ISSET(i, &copy))
             {
-                // found data to read from connection i
+                // found data to read from connection
                 if (i == listening)
                 {
                     // handle new connection
-                    struct sockaddr_storage remoteaddr;  // client address
+                    struct sockaddr_storage remoteaddr; // client address
                     socklen_t addrlen = sizeof remoteaddr;
 
                     int newfd = accept(listening, (struct sockaddr *)&remoteaddr, &addrlen);
