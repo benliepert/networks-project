@@ -119,7 +119,7 @@ int main()
                         }
                         char remoteIP[INET6_ADDRSTRLEN];
                         printf("selectserver: new connection from %s on "
-                               "socked %d \n",
+                               "socket %d \n",
                                inet_ntop(remoteaddr.ss_family,
                                          get_in_addr((struct sockaddr *)&remoteaddr),
                                          remoteIP, INET6_ADDRSTRLEN),

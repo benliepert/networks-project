@@ -95,6 +95,14 @@ int main(int argc, char *argv[])
     printf("client: connecting to %s\n", s);
     freeaddrinfo(servinfo); // all done with this structure
 
+    // only need to listen to one socket this entire time, it's the server's socket. 
+    // we want to use select on sockfd, the socket we're using for the server connection,
+    //      and STDIN, because that's where we'll get input that we want to send
+
+    for(;;)
+    {
+
+    }
     if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1)
     {
         perror("recv");
