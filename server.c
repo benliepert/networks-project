@@ -85,7 +85,6 @@ int main()
     char buf[256]; // buffer for client data
 
     //===================SELECT FOR MULTI I/O===========================================
-
     for (;;)
     {
         fd_set copy = master;

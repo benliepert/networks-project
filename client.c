@@ -1,12 +1,20 @@
 // custom IRC client
 // created by Gezim Saciri, Ben Leipert, Josh Blaz
-
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/select.h>
+#include <unistd.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#define PORT "9034" // the port client will be connecting to
+#define MAXDATASIZE 100 // max number of bytes we can get at once 
 /*
 int sendall(int s, char *buf, int *len)
 {
@@ -27,75 +35,77 @@ int sendall(int s, char *buf, int *len)
     return n == -1 ? -1 : 0; // return -1 on failure, 0 on success
 }
 */
-int client()
+void *get_in_addr(struct sockaddr *sa)
 {
-    /*
-    //=================CREATE LISTENING SOCKET==========================================
+    if (sa->sa_family == AF_INET)
+        return &(((struct sockaddr_in *)sa)->sin_addr);
 
-    // create a struct for our address info
-    struct addrinfo hints, *res, *p;
+    return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+}
 
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;     // IPv4 or v6
-    hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
-    hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
+int main(int argc, char *argv[])
+{
+    int sockfd, numbytes;
+    char buf[MAXDATASIZE];
+    struct addrinfo hints, *servinfo, *p;
+    int status;
+    char s[INET6_ADDRSTRLEN];
 
-    // get our socket info
-    int status; // need to store it for error reporting
-    if ((status = getaddrinfo(NULL, MYPORT, &hints, &res)) != 0)
+    if (argc != 2)
     {
-        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
+        fprintf(stderr, "usage: client hostname\n");
         exit(1);
     }
 
-    // create a socket to listen on
-    int listening = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (listening == -1)
-        printf("socket error %i\n", listening);
-
-    // bind socket to the port we passed in to getaddrinfo() so we can keep listening
-    int bindResult = bind(listening, res->ai_addr, res->ai_addrlen);
-    if (bindResult == -1)
-        printf("bind error %i\n", bindResult);
-
-    for (p = res; p != NULL; p = p->ai_next)
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    if ((status = getaddrinfo(argv[1], PORT, &hints, &servinfo)) != 0)
     {
-        listening = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (listening < 0)
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
+        return 1;
+    }
+
+    // loop through all the results and connect to the first we can
+    for (p = servinfo; p != NULL; p = p->ai_next)
+    {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+                             p->ai_protocol)) == -1)
         {
+            perror("client: socket");
             continue;
         }
-
-        int yes = 1; // for setsockopt()
-        // lose the pesky "address already in use" error message
-        setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-
-        if (bind(listening, p->ai_addr, p->ai_addrlen) < 0)
+        if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1)
         {
-            close(listening);
+            close(sockfd);
+            perror("client: connect");
             continue;
         }
         break;
     }
-    // failed to bind
     if (p == NULL)
     {
-        fprintf(stderr, "selectserver: failed to bind\n");
-        exit(2);
+        fprintf(stderr, "client: failed to connect\n");
+        return 2;
     }
 
-    freeaddrinfo(res);
+    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
+              s, sizeof s);
 
-    // listen
-    if (listen(listening, 10) == -1)
+    printf("client: connecting to %s\n", s);
+    freeaddrinfo(servinfo); // all done with this structure
+
+    if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1)
     {
-        perror("listen");
-        exit(3);
+        perror("recv");
+        exit(1);
     }
-
+    buf[numbytes] = '\0';
+    printf("client: received '%s'\n", buf);
+    close(sockfd);
+    /*
     char buf[10] = "Beej!";
-    int len;
-    len = strlen(buf);
+    int len = strlen(buf);
     if (sendall(s, buf, &len) == -1)
     {
         perror("sendall");
