@@ -11,14 +11,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define MYPORT "54001"
+#define MYPORT "9034"
 
-void(*get_in_addr(struct sockaddr *sa))
+void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET)
-    {
         return &(((struct sockaddr_in *)sa)->sin_addr);
-    }
 
     return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
@@ -43,26 +41,16 @@ int main()
         exit(1);
     }
 
-    // create a socket to listen on
-    int listening = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (listening == -1)
-        printf("socket error %i\n", listening);
-
-    // bind socket to the port we passed in to getaddrinfo() so we can keep listening
-    int bindResult = bind(listening, res->ai_addr, res->ai_addrlen);
-    if (bindResult == -1)
-        printf("bind error %i\n", bindResult);
-
+    // select and bind to our socket
+    int listening;
     for (p = res; p != NULL; p = p->ai_next)
     {
         listening = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (listening < 0)
-        {
             continue;
-        }
 
         int yes = 1; // for setsockopt()
-        // lose the pesky "address already in use" error message
+        // lose the "address already in use" error message
         setsockopt(listening, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
         if (bind(listening, p->ai_addr, p->ai_addrlen) < 0)
@@ -88,8 +76,6 @@ int main()
         exit(3);
     }
 
-    //===================SELECT FOR MULTI I/O===========================================
-
     fd_set master; // master file descriptor list
     FD_ZERO(&master);
     FD_SET(listening, &master);
@@ -97,6 +83,8 @@ int main()
     int fdmax = listening; // biggest file descriptor
     int i, j, nbytes;
     char buf[256]; // buffer for client data
+
+    //===================SELECT FOR MULTI I/O===========================================
 
     for (;;)
     {
