@@ -13,9 +13,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define PORT "9034" // the port client will be connecting to
-#define MAXDATASIZE 100 // max number of bytes we can get at once 
-/*
+#define PORT "9034"     // the port client will be connecting to
+#define MAXDATASIZE 100 // max number of bytes we can get at once
+
 int sendall(int s, char *buf, int *len)
 {
     int total = 0;        // how many bytes we've sent
@@ -34,7 +34,7 @@ int sendall(int s, char *buf, int *len)
     *len = total;            // return number actually sent here
     return n == -1 ? -1 : 0; // return -1 on failure, 0 on success
 }
-*/
+
 void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET)
@@ -98,68 +98,67 @@ int main(int argc, char *argv[])
     printf("client: connecting to %s\n", s);
     freeaddrinfo(servinfo); // all done with this structure
 
-    // only need to listen to one socket this entire time, it's the server's socket. 
+    // only need to listen to one socket this entire time, it's the server's socket.
     // we want to use select on sockfd, the socket we're using for the server connection,
     //      and STDIN, because that's where we'll get input that we want to send
 
-    int stdin = 0; //file descriptor for stdin
+    //int stdin = 0; //file descriptor for stdin
     fd_set master; // master file descriptor list
     FD_ZERO(&master);
-    FD_SET(listening, &master);
+    FD_SET(sockfd, &master);
+    FD_SET(0, &master);
 
     int fdmax = sockfd; // biggest file descriptor
     int i, j, nbytes, numbytes;
-    char buf[256]; // buffer for client data
+   // char buf[256]; // buffer for client data
+    long unsigned int iBytes = 256;
+    char *buf = (char*)malloc(sizeof(char*)*iBytes);
     //===================SELECT FOR MULTI I/O===========================================
     for (;;)
     {
+        //printf("INLOOP\n\n\n");
         fd_set copy = master;
         if (select(fdmax + 1, &copy, NULL, NULL, NULL) == -1) // setting last val to NULL means no timeout
         {
             perror("select");
             exit(4);
         }
+        //printf("SELECT RETURNED BOI\n\n");
         // run through the existing connections looking for data to read
         for (i = 0; i <= fdmax; i++)
         {
             if (FD_ISSET(i, &copy))
             {
-                
                 if (i == sockfd) // found data from server
                 {
                     // handle data from a client
-                    if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0)
+                    if ((nbytes = recv(i, buf, sizeof buf, 0)) == -1)
                     {
                         // no data from server
+                        perror("recv");
+                        exit(1);
                     }
-                    else
+                    // some data from server
+                    buf[numbytes] = '\0';
+                    printf("client: received '%s'\n", buf);
+                }
+                else if (i == 0)
+                {
+                    // get data using getline, not recv cause stdin isn't a socket
+                    
+                    int iBytesRead = getline(&buf, &iBytes, stdin);
+
+                        // reading data from stdin, need to send to server
+                    int len = strlen(buf);
+                    if (sendall(sockfd, buf, &len) == -1)
                     {
-                        // some data from server
+                        perror("sendall");
+                        printf("We only sent %d bytes because of the error!\n", len);
                     }
                 }
-                else if (i == stdin)
-                {
-                    // reading data from stdin, need to send to server
-                } 
-            }     
-        }         // END looping through file descriptors
-    }             // END for(;;)
-    // if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1)
-    // {
-    //     perror("recv");
-    //     exit(1);
-    // }
-    // buf[numbytes] = '\0';
-    // printf("client: received '%s'\n", buf);
-    // close(sockfd);
-    /*
-    char buf[10] = "Beej!";
-    int len = strlen(buf);
-    if (sendall(s, buf, &len) == -1)
-    {
-        perror("sendall");
-        printf("We only sent %d bytes because of the error!\n", len);
-    }
-    */
+            }
+        } // END looping through file descriptors
+    }     // END for(;;)
+
     return 0;
 }
