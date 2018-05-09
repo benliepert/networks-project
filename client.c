@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <cassert>
 
 #define PORT "9034"     // the port client will be connecting to
 #define MAXDATASIZE 100 // max number of bytes we can get at once
@@ -125,6 +126,7 @@ int main(int argc, char *argv[])
         }
         //printf("SELECT RETURNED BOI\n\n");
         // run through the existing connections looking for data to read
+        //printf("here");
         for (i = 0; i <= fdmax; i++)
         {
             if (FD_ISSET(i, &copy))
@@ -138,14 +140,14 @@ int main(int argc, char *argv[])
                         perror("recv");
                         exit(1);
                     }
-                    // some data from server
-                    buf[numbytes] = '\0';
+                    // some data from server 
+                    assert(nbytes <= 255);
+                    buf[nbytes] = '\0';
                     printf("client: received '%s'\n", buf);
                 }
                 else if (i == 0)
                 {
                     // get data using getline, not recv cause stdin isn't a socket
-                    
                     int iBytesRead = getline(&buf, &iBytes, stdin);
 
                         // reading data from stdin, need to send to server
