@@ -45,28 +45,30 @@ void *get_in_addr(struct sockaddr *sa)
 
 int main(int argc, char *argv[])
 {
-    int sockfd, numbytes;
-    char buf[MAXDATASIZE];
-    struct addrinfo hints, *servinfo, *p;
-    int status;
-    char s[INET6_ADDRSTRLEN];
-
+    // command line error, will not need later
     if (argc != 2)
     {
         fprintf(stderr, "usage: client hostname\n");
         exit(1);
     }
 
+    // create struct for address info
+    struct addrinfo hints, *servinfo, *p;
+
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
+
+    // get socket info
+    int status;
     if ((status = getaddrinfo(argv[1], PORT, &hints, &servinfo)) != 0)
     {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
-        return 1;
+        exit(1);
     }
 
     // loop through all the results and connect to the first we can
+    int sockfd;
     for (p = servinfo; p != NULL; p = p->ai_next)
     {
         if ((sockfd = socket(p->ai_family, p->ai_socktype,
@@ -86,9 +88,10 @@ int main(int argc, char *argv[])
     if (p == NULL)
     {
         fprintf(stderr, "client: failed to connect\n");
-        return 2;
+        exit(2);
     }
 
+    char s[INET6_ADDRSTRLEN];
     inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
               s, sizeof s);
 
@@ -99,18 +102,56 @@ int main(int argc, char *argv[])
     // we want to use select on sockfd, the socket we're using for the server connection,
     //      and STDIN, because that's where we'll get input that we want to send
 
-    for(;;)
-    {
+    int stdin = 0; //file descriptor for stdin
+    fd_set master; // master file descriptor list
+    FD_ZERO(&master);
+    FD_SET(listening, &master);
 
-    }
-    if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1)
+    int fdmax = sockfd; // biggest file descriptor
+    int i, j, nbytes, numbytes;
+    char buf[256]; // buffer for client data
+    //===================SELECT FOR MULTI I/O===========================================
+    for (;;)
     {
-        perror("recv");
-        exit(1);
-    }
-    buf[numbytes] = '\0';
-    printf("client: received '%s'\n", buf);
-    close(sockfd);
+        fd_set copy = master;
+        if (select(fdmax + 1, &copy, NULL, NULL, NULL) == -1) // setting last val to NULL means no timeout
+        {
+            perror("select");
+            exit(4);
+        }
+        // run through the existing connections looking for data to read
+        for (i = 0; i <= fdmax; i++)
+        {
+            if (FD_ISSET(i, &copy))
+            {
+                
+                if (i == sockfd) // found data from server
+                {
+                    // handle data from a client
+                    if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0)
+                    {
+                        // no data from server
+                    }
+                    else
+                    {
+                        // some data from server
+                    }
+                }
+                else if (i == stdin)
+                {
+                    // reading data from stdin, need to send to server
+                } 
+            }     
+        }         // END looping through file descriptors
+    }             // END for(;;)
+    // if ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) == -1)
+    // {
+    //     perror("recv");
+    //     exit(1);
+    // }
+    // buf[numbytes] = '\0';
+    // printf("client: received '%s'\n", buf);
+    // close(sockfd);
     /*
     char buf[10] = "Beej!";
     int len = strlen(buf);
