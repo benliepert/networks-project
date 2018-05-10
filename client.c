@@ -100,14 +100,22 @@ int main(int argc, char *argv[])
     freeaddrinfo(servinfo); // all done with this structure
 
     // connection established
+    int n; // declare socket value
+
     /* int send(int sockfd, const void *msg, int len, int flags) (always set flags to 0) - returns #bytes sent out */
-    string setName = "NAME gay69\r\n"
-    // format with sprintf() later %s
+    char* setName = "NAME gay69\r\n";
+    /* format with sprintf() later %s */
     n = send(sockfd, setName, strlen(setName), 0);
 
-    string joinChannel = "JOIN #<Channel>"
-    // format with sprintf() later %s
-    n = send(sockfd, joinChannel, strlen(joinChannel), 0)
+    /*
+    Prompt: Create or Join a channel?
+            : if they want to join a channel, fetch the list of channels -> LIST command (FIND = LIST)
+            else: CREATE a channel, but can't be a name in LIST, so we need to call LIST either way
+    */
+
+    char* joinChannel = "JOIN #<Channel>";
+    /* format with sprintf() later %s */
+    n = send(sockfd, joinChannel, strlen(joinChannel), 0);
 
     // only need to listen to one socket this entire time, it's the server's socket.
     // we want to use select on sockfd, the socket we're using for the server connection,
