@@ -144,8 +144,27 @@ int main()
                         close(i);
                         FD_CLR(i, &master); // remove from master set
                     }
-                    else
-                    {
+                    else 
+                    {   
+                        char *tokens = strtok(buf, ' '); // split buffer
+                        char *command = tokens[0];       // find first word, test if command
+
+                        if(strcmp(command, "NAME")) // NAME command
+                        {
+                            
+                        }
+                        else if (strcmp(command, "JOIN")) // JOIN (channel) command
+                        {
+                            
+                        }
+                        else if (strcmp(command, "CREATE")) // CREATE (channel) command
+                        {
+                            
+                        }
+
+                        //test against list of commands
+                        //printf("%s", buf);
+                        // for line in buf? find name command, join command?
                         // we got some data from a client
                         for (j = 0; j <= fdmax; j++)
                         {

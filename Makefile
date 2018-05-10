@@ -46,5 +46,5 @@ server: server.h server.c
 #    tidy  -- eliminate unwanted files
 #    clean -- delete derived files in preparation for rebuild
 
-clean: tidy
+clean: 
 	rm -f *o server client
