@@ -103,11 +103,10 @@ int main(int argc, char *argv[])
     // we want to use select on sockfd, the socket we're using for the server connection,
     //      and STDIN, because that's where we'll get input that we want to send
 
-    //int stdin = 0; //file descriptor for stdin
     fd_set master; // master file descriptor list
     FD_ZERO(&master);
-    FD_SET(sockfd, &master);
-    FD_SET(0, &master);
+    FD_SET(sockfd, &master);  // want to be listening to server
+    FD_SET(0, &master);       // want to be listening to stdin
 
     int fdmax = sockfd; // biggest file descriptor
     int i, j, nbytes, numbytes;
@@ -142,6 +141,10 @@ int main(int argc, char *argv[])
                     }
                     // some data from server 
                     assert(nbytes <= 255);
+                    if (buf[nbytes-1] == '\n') //ignore newline that's typed when client presses enter
+                    {
+                        nbytes--;
+                    }
                     buf[nbytes] = '\0';
                     printf("client: received '%s'\n", buf);
                 }
