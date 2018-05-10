@@ -99,6 +99,16 @@ int main(int argc, char *argv[])
     printf("client: connecting to %s\n", s);
     freeaddrinfo(servinfo); // all done with this structure
 
+    // connection established
+    /* int send(int sockfd, const void *msg, int len, int flags) (always set flags to 0) - returns #bytes sent out */
+    string setName = "NAME gay69\r\n"
+    // format with sprintf() later %s
+    n = send(sockfd, setName, strlen(setName), 0);
+
+    string joinChannel = "JOIN #<Channel>"
+    // format with sprintf() later %s
+    n = send(sockfd, joinChannel, strlen(joinChannel), 0)
+
     // only need to listen to one socket this entire time, it's the server's socket.
     // we want to use select on sockfd, the socket we're using for the server connection,
     //      and STDIN, because that's where we'll get input that we want to send
