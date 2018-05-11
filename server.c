@@ -13,6 +13,25 @@
 
 #define MYPORT "9034"
 
+struct channel
+{
+    struct channel *next;
+    char* name; //channel name
+    char* shitposters[100];
+    //int fd; // file descriptor?
+    // linked list of users on the channel
+};
+
+struct client
+{
+    struct client *next;
+    char* name; // store this once we get NAME command
+    int socket; // store to associate user's name and socket
+};
+
+char* sockets[100]; // list of sockets with structs
+char* channels[100]; // list of channels
+
 void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET)
@@ -146,21 +165,46 @@ int main()
                     }
                     else 
                     {   
-                        char *tokens = strtok(buf, ' '); // split buffer
-                        char *command = tokens[0];       // find first word, test if command
+                        // match i to structure
+                        // i is the socket -> need to determine if we have a struct for it yet
+                        char *command = strtok(buf, " "); //strtok returns first split
 
-                        if(strcmp(command, "NAME")) // NAME command
+                        int sendMessages = 0; // set to 1 when the struct contains a name, socket, and at least one channel
+                        
+                        /*
+                        STATUS:
+                            need a function that can find a struct given a socket
+                            returns struct if it has one, otherwise returns NULL
+                            don't need hasStruct()
+                        
+                        */ 
+                       
+
+
+                        /*
+                        if(strcmp(command, "NAME")) // NAME command - strcmp = string compare
                         {
-                            
+                            // check if current socket has a structure already?
+                            //client->name = tokens[1:]; // store name as everything following NAME command, can also limit this to one word with tokens[1]
+                            //client->socket = i;  // store socket in struct
                         }
-                        else if (strcmp(command, "JOIN")) // JOIN (channel) command
+                        if (strcmp(command, "JOIN")) // JOIN (channel) command
                         {
-                            
+                            // check list of channels -> give client list of channels
+                            // prompt client to choose one
                         }
                         else if (strcmp(command, "CREATE")) // CREATE (channel) command
                         {
-                            
+                            // check list of channels against client's channel name
+                            // if no match -> create channel
+                            // otherwise prompt client for another channel name
                         }
+                        if(sendMessages){
+                            // specify channel? // currentchannel?
+                            // send buffer to other clients in channel
+                        }
+                        */
+                        //messages: temporary buffer: "NAME: <concat old buffer>"
 
                         //test against list of commands
                         //printf("%s", buf);
