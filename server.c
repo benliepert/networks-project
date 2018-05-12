@@ -71,7 +71,6 @@ int main()
 
     // create a struct for our address info
     struct addrinfo hints, *res, *p;
-
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;     // IPv4 or v6
     hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
@@ -127,6 +126,7 @@ int main()
     int fdmax = listening; // biggest file descriptor
     int i, j, nbytes;
     int structs = 0;
+    client structArray[100]; // create our array of structs
     char buf[256]; // buffer for client data
 
     //===================SELECT FOR MULTI I/O===========================================
@@ -193,25 +193,26 @@ int main()
                     {   
                         // match i to structure
                         // i is the socket -> need to determine if we have a struct for it yet
-                        //char *command = strtok(buf, " "); //strtok returns first split element
+                        char *command = strtok(buf, " "); //strtok returns first split element
 
-                        //bool sendMessages = 0; // conditional set when the struct contains a name, socket, and at least one channel
-                        /*determine here*/
-                        /*
-                        STATUS:
-                            need a function that can find a struct given a socket
-                            returns struct if it has one, otherwise returns NULL
-                            don't need hasStruct()
+                        /*determine whether client should send messages (has user name)*/
+                        struct client currentClient = identify_client(i, structArray, structs); // get current client
+
                         
-                        */ 
-
-                        /*
-                        if(strcmp(command, "NAME")) // NAME command - strcmp = string compare
+                        if(!strcmp(command, "NAME")) // NAME command - strcmp = string compare if == 0 -> strings are equal
                         {
+                            printf("COMMAND: %s \n", command);
+                            command = strtok(NULL, buf); // get to next token?
+                            printf("name = %s \n", command);
+                            printf("%s \n", buf);
+                            currentClient.name = command;
+                            currentClient.channels[0] = "gaychannel";
                             // check if current socket has a structure already?
                             //client->name = tokens[1:]; // store name as everything following NAME command, can also limit this to one word with tokens[1]
                             //client->socket = i;  // store socket in struct
                         }
+                        printf("client name = %s \n", currentClient.name);
+                        /*
                         if (strcmp(command, "JOIN")) // JOIN (channel) command
                         {
                             // check list of channels -> give client list of channels
@@ -223,7 +224,7 @@ int main()
                             // if no match -> create channel
                             // otherwise prompt client for another channel name
                         }
-                        else if (strcmp(command[0], "#")) // CREATE (channel) command
+                        else if (strcmp(command[0], "#") && sendMessages) 
                         {
                             // check list of channels against client's channel name
                             // if no match -> create channel
