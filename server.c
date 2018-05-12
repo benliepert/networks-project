@@ -13,24 +13,49 @@
 
 #define MYPORT "9034"
 
+/*
 struct channel
 {
     struct channel *next;
     char* name; //channel name
-    char* shitposters[100];
+    struct client clients[100];
     //int fd; // file descriptor?
     // linked list of users on the channel
 };
+*/
 
 struct client
 {
-    struct client *next;
     char* name; // store this once we get NAME command
-    int socket; // store to associate user's name and socket
+    char* channels[5]; // client's channel(s)?
+    int fd; // file descriptor
 };
 
-char* sockets[100]; // list of sockets with structs
-char* channels[100]; // list of channels
+client create_client(int fd)
+{
+    struct client i;
+    i.fd = fd; 
+    return i;
+}
+
+client identify_client(int fd, client structArray[], int structs)
+{
+    for(int j = 0; j < structs; j++)
+    {
+        if(structArray[j].fd == fd)
+        {
+            return structArray[j]; 
+        }
+    }
+
+
+    struct client newClient;
+    newClient = create_client(fd);
+    structArray[structs] = newClient; // append new client to the array of structs
+
+    structs = structs + 1;
+    return newClient;
+}
 
 void *get_in_addr(struct sockaddr *sa)
 {
@@ -101,6 +126,7 @@ int main()
 
     int fdmax = listening; // biggest file descriptor
     int i, j, nbytes;
+    int structs = 0;
     char buf[256]; // buffer for client data
 
     //===================SELECT FOR MULTI I/O===========================================
@@ -167,10 +193,10 @@ int main()
                     {   
                         // match i to structure
                         // i is the socket -> need to determine if we have a struct for it yet
-                        char *command = strtok(buf, " "); //strtok returns first split
+                        //char *command = strtok(buf, " "); //strtok returns first split element
 
-                        int sendMessages = 0; // set to 1 when the struct contains a name, socket, and at least one channel
-                        
+                        //bool sendMessages = 0; // conditional set when the struct contains a name, socket, and at least one channel
+                        /*determine here*/
                         /*
                         STATUS:
                             need a function that can find a struct given a socket
@@ -178,8 +204,6 @@ int main()
                             don't need hasStruct()
                         
                         */ 
-                       
-
 
                         /*
                         if(strcmp(command, "NAME")) // NAME command - strcmp = string compare
@@ -199,16 +223,19 @@ int main()
                             // if no match -> create channel
                             // otherwise prompt client for another channel name
                         }
-                        if(sendMessages){
+                        else if (strcmp(command[0], "#")) // CREATE (channel) command
+                        {
+                            // check list of channels against client's channel name
+                            // if no match -> create channel
+                            // otherwise prompt client for another channel name
+                            
+                            if(sendMessages){
                             // specify channel? // currentchannel?
                             // send buffer to other clients in channel
+                            }
                         }
                         */
-                        //messages: temporary buffer: "NAME: <concat old buffer>"
-
-                        //test against list of commands
-                        //printf("%s", buf);
-                        // for line in buf? find name command, join command?
+                        //messages: temporary buffer: "NAME: concat <old buffer>"
                         // we got some data from a client
                         for (j = 0; j <= fdmax; j++)
                         {
