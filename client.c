@@ -119,13 +119,12 @@ int main(int argc, char *argv[])
     //format with sprintf() later %s 
     n = send(sockfd, joinChannel, strlen(joinChannel), 0);
     */
+    //========================================================================================================
 
     // only need to listen to one socket this entire time, it's the server's socket.
     // we want to use select on sockfd, the socket we're using for the server connection,
-    //      and STDIN, because that's where we'll get input that we want to send
-
-    //========================================================================================================
-
+    // and STDIN, because that's where we'll get input that we want to send
+    
     fd_set master; // master file descriptor list
     FD_ZERO(&master);
     FD_SET(sockfd, &master); // want to be listening to server
@@ -160,7 +159,7 @@ int main(int argc, char *argv[])
                         perror("recv");
                         exit(1);
                     }
-                    
+
                     if (buf[nbytes - 1] == '\n') //ignore newline that's typed when client presses enter
                     {
                         nbytes--;
