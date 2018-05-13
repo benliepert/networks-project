@@ -98,52 +98,55 @@ int main(int argc, char *argv[])
 
     printf("client: connecting to %s\n", s);
     freeaddrinfo(servinfo); // all done with this structure
-
     // connection established
-    int n; // declare socket value
 
-    /* int send(int sockfd, const void *msg, int len, int flags) (always set flags to 0) - returns #bytes sent out */
+    //=================================================================================================
+    // TEST STUFF
+
+    /*int n; // declare socket value
+    int send(int sockfd, const void *msg, int len, int flags) (always set flags to 0) - returns #bytes sent out 
     char* setName = "NAME gay69\r\n";
-    /* format with sprintf() later %s */
-    n = send(sockfd, setName, strlen(setName), 0);
+    // format with sprintf() later %s 
+    //n = send(sockfd, setName, strlen(setName), 0);
 
-    /*
-    Prompt: Create or Join a channel?
-            : if they want to join a channel, fetch the list of channels -> LIST command (FIND = LIST)
-            else: CREATE a channel, but can't be a name in LIST, so we need to call LIST either way
-    */
+    
+    //Prompt: Create or Join a channel?
+    //        : if they want to join a channel, fetch the list of channels -> LIST command (FIND = LIST)
+    //        else: CREATE a channel, but can't be a name in LIST, so we need to call LIST either way
+    
 
     char* joinChannel = "JOIN #<Channel>";
-    /* format with sprintf() later %s */
+    //format with sprintf() later %s 
     n = send(sockfd, joinChannel, strlen(joinChannel), 0);
+    */
 
     // only need to listen to one socket this entire time, it's the server's socket.
     // we want to use select on sockfd, the socket we're using for the server connection,
     //      and STDIN, because that's where we'll get input that we want to send
 
+    //========================================================================================================
+
     fd_set master; // master file descriptor list
     FD_ZERO(&master);
-    FD_SET(sockfd, &master);  // want to be listening to server
-    FD_SET(0, &master);       // want to be listening to stdin
+    FD_SET(sockfd, &master); // want to be listening to server
+    FD_SET(0, &master);      // want to be listening to stdin
 
     int fdmax = sockfd; // biggest file descriptor
     int i, j, nbytes, numbytes;
-   // char buf[256]; // buffer for client data
+    // char buf[256]; // buffer for client data
     long unsigned int iBytes = 256;
-    char *buf = (char*)malloc(sizeof(char*)*iBytes);
+    char *buf = (char *)malloc(sizeof(char *) * iBytes);
     //===================SELECT FOR MULTI I/O===========================================
     for (;;)
     {
-        //printf("INLOOP\n\n\n");
+        //printf("INLOOP\n");
         fd_set copy = master;
         if (select(fdmax + 1, &copy, NULL, NULL, NULL) == -1) // setting last val to NULL means no timeout
         {
             perror("select");
             exit(4);
         }
-        //printf("SELECT RETURNED BOI\n\n");
         // run through the existing connections looking for data to read
-        //printf("here");
         for (i = 0; i <= fdmax; i++)
         {
             if (FD_ISSET(i, &copy))
@@ -157,9 +160,8 @@ int main(int argc, char *argv[])
                         perror("recv");
                         exit(1);
                     }
-                    // some data from server 
-                    assert(nbytes <= 255);
-                    if (buf[nbytes-1] == '\n') //ignore newline that's typed when client presses enter
+                    
+                    if (buf[nbytes - 1] == '\n') //ignore newline that's typed when client presses enter
                     {
                         nbytes--;
                     }
@@ -171,7 +173,7 @@ int main(int argc, char *argv[])
                     // get data using getline, not recv cause stdin isn't a socket
                     int iBytesRead = getline(&buf, &iBytes, stdin);
 
-                        // reading data from stdin, need to send to server
+                    // reading data from stdin, need to send to server
                     int len = strlen(buf);
                     if (sendall(sockfd, buf, &len) == -1)
                     {

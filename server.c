@@ -26,37 +26,29 @@ struct channel
 
 struct client
 {
-    char* name; // store this once we get NAME command
-    char* channels[5]; // client's channel(s)?
-    int fd; // file descriptor
+    char *name;        // store this once we get NAME command
+    char *channels[5]; // client's channel(s)?
+    int fd;            // file descriptor
 };
 
 client create_client(int fd)
 {
     struct client i;
-    i.fd = fd; 
+    i.fd = fd;
     return i;
 }
-
-client identify_client(int fd, client structArray[], int structs)
+/*
+client identify_client(int fd, client structArray[], int fdmax)
 {
-    for(int j = 0; j < structs; j++)
+    for (int j = 0; j < fdmax; j++)
     {
-        if(structArray[j].fd == fd)
+        if (structArray[j].fd == fd)
         {
-            return structArray[j]; 
+            return structArray[j];
         }
     }
-
-
-    struct client newClient;
-    newClient = create_client(fd);
-    structArray[structs] = newClient; // append new client to the array of structs
-
-    structs = structs + 1;
-    return newClient;
 }
-
+*/
 void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET)
@@ -127,7 +119,7 @@ int main()
     int i, j, nbytes;
     int structs = 0;
     client structArray[100]; // create our array of structs
-    char buf[256]; // buffer for client data
+    char buf[1024];           // buffer for client data
 
     //===================SELECT FOR MULTI I/O===========================================
     for (;;)
@@ -141,8 +133,10 @@ int main()
         // run through the existing connections looking for data to read
         for (i = 0; i <= fdmax; i++)
         {
+            printf("1\n");
             if (FD_ISSET(i, &copy))
             {
+                printf("2\n");
                 // found data to read from connection
                 if (i == listening)
                 {
@@ -169,10 +163,17 @@ int main()
                                          get_in_addr((struct sockaddr *)&remoteaddr),
                                          remoteIP, INET6_ADDRSTRLEN),
                                newfd);
+                        // create a client for this new socket, so that it may be identified again in the future
+                        struct client newClient;
+                        newClient = create_client(newfd);
+                        structArray[structs] = newClient; // append new client to the array of structs
+                        printf("client struct array: %u \n", structArray[structs]);
+                        structs = structs + 1;
                     }
                 }
                 else
                 {
+                    printf("3\n");
                     // handle data from a client
                     if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0)
                     {
@@ -189,27 +190,36 @@ int main()
                         close(i);
                         FD_CLR(i, &master); // remove from master set
                     }
-                    else 
-                    {   
+                    else
+                    {
+                        printf("4\n");
                         // match i to structure
                         // i is the socket -> need to determine if we have a struct for it yet
                         char *command = strtok(buf, " "); //strtok returns first split element
 
-                        /*determine whether client should send messages (has user name)*/
-                        struct client currentClient = identify_client(i, structArray, structs); // get current client
-
+                        /* identifies the socket with the correct structure, or make one for a new socket*/
+                        //struct client currentClient = identify_client(i, structArray, fdmax); // get current client
                         
-                        if(!strcmp(command, "NAME")) // NAME command - strcmp = string compare if == 0 -> strings are equal
+                        // or do this...
+                        struct client currentClient;
+                        for (int k = 0; k <= fdmax; k++)
+                        {
+                            if (structArray[k].fd == i)
+                            {
+                                currentClient = structArray[k]; // get current client
+                            }
+                        }
+                        
+                        // cannot do printf("socketnumber: %i \n", i) this will segfault due to repetition
+
+                        if (!strcmp(command, "NAME")) // NAME command - strcmp = string compare if == 0 -> strings are equal
                         {
                             printf("COMMAND: %s \n", command);
-                            command = strtok(NULL, buf); // get to next token?
-                            printf("name = %s \n", command);
-                            printf("%s \n", buf);
+                            command = strtok(NULL, buf); // get to next token, ie the name
+                            printf("COMMAND: %s \n", command);
+                            
                             currentClient.name = command;
-                            currentClient.channels[0] = "gaychannel";
-                            // check if current socket has a structure already?
-                            //client->name = tokens[1:]; // store name as everything following NAME command, can also limit this to one word with tokens[1]
-                            //client->socket = i;  // store socket in struct
+        
                         }
                         printf("client name = %s \n", currentClient.name);
                         /*
