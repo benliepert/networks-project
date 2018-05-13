@@ -13,17 +13,6 @@
 
 #define MYPORT "9034"
 
-/*
-struct channel
-{
-    struct channel *next;
-    char* name; //channel name
-    struct client clients[100];
-    //int fd; // file descriptor?
-    // linked list of users on the channel
-};
-*/
-
 struct client
 {
     char *name;        // store this once we get NAME command
@@ -61,12 +50,32 @@ void update_client(int fd, client client_array[], client current_client, int fdm
         }
     }
 }
+
 void *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET)
         return &(((struct sockaddr_in *)sa)->sin_addr);
 
     return &(((struct sockaddr_in6 *)sa)->sin6_addr);
+}
+
+int sendall(int s, char *buf, int len)
+{
+    int total = 0;        // how many bytes we've sent
+    int bytesleft = len; // how many we have left to send
+    int n;
+    while (total < len)
+    {
+        n = send(s, buf + total, bytesleft, 0);
+        if (n == -1)
+        {
+            break;
+        }
+        total += n;
+        bytesleft -= n;
+    }
+    len = total;            // return number actually sent here
+    return n == -1 ? -1 : 0; // return -1 on failure, 0 on success
 }
 
 int main()
@@ -128,10 +137,9 @@ int main()
     FD_SET(listening, &master);
 
     int fdmax = listening; // biggest file descriptor
-    int i, j, nbytes;
+    int i, j;
     int struct_number = 0;           // keeps track of the how many clients we have
-    struct client client_array[100]; // create our array of client
-    char buf[1024];                  // buffer for client data
+    struct client client_array[100]; // create our array of clients
 
     //===================SELECT FOR MULTI I/O===========================================
     for (;;)
@@ -186,6 +194,8 @@ int main()
                 {
                     //printf("3\n");
                     // handle data from a client
+                    char buf[1024]; // buffer for client data
+                    int nbytes;
                     if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0)
                     {
                         // got connection closed or eror by client
@@ -204,23 +214,25 @@ int main()
                     else
                     {
                         //printf("4\n");
-                        printf("Buffer is: %s \n",buf);
+                        char token_buf[1024];
+                        strcpy (token_buf, buf);
+                        char *command = strtok(token_buf, " "); //strtok returns first split element
 
-                        char *command = strtok(buf, " "); //strtok returns first split element
-
-                        // identifies the socket with the correct structure !!!!has return issue!!!!
-                        struct client current_client = identify_client(i, client_array, fdmax); // get current client
+                        // identifies the socket with the correct structure
+                        struct client current_client = identify_client(i, client_array, fdmax);
                         printf("client socket = %i \n", current_client.fd);
 
                         // NAME
                         if (!strcmp(command, "NAME")) // string compare if == 0 -> strings are equal
                         {
+                            printf("1client name = %s \n", current_client.name);
                             printf("COMMAND: %s \n", command);
-                            command = strtok(NULL, buf); // get to next token, ie the name
+                            command = strtok(NULL, token_buf); // get to next token, ie the name
                             printf("COMMAND: %s \n", command);
                             current_client.name = command;
+                            printf("2client name = %s \n", current_client.name);
                         }
-                        printf("client name = %s \n", current_client.name);
+                        printf("3client name = %s \n", current_client.name);
 
                         /*
                         if (strcmp(command, "JOIN")) // JOIN (channel) command
@@ -260,7 +272,7 @@ int main()
                                 // except the listening and ourselves
                                 if (j != listening && j != i)
                                 {
-                                    if (send(j, buf, nbytes, 0) == -1)
+                                    if (sendall(j, buf, nbytes) == -1)
                                     {
                                         perror("send");
                                     }

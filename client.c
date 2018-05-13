@@ -124,17 +124,18 @@ int main(int argc, char *argv[])
     // only need to listen to one socket this entire time, it's the server's socket.
     // we want to use select on sockfd, the socket we're using for the server connection,
     // and STDIN, because that's where we'll get input that we want to send
-    
+
     fd_set master; // master file descriptor list
     FD_ZERO(&master);
     FD_SET(sockfd, &master); // want to be listening to server
     FD_SET(0, &master);      // want to be listening to stdin
 
     int fdmax = sockfd; // biggest file descriptor
-    int i, j, nbytes, numbytes;
-    // char buf[256]; // buffer for client data
+    int i, nbytes;
+    char recieve_buf[1024]; // buffer for recieving data
     long unsigned int iBytes = 256;
-    char *buf = (char *)malloc(sizeof(char *) * iBytes);
+    char *buf = (char *)malloc(sizeof(char *) * iBytes); // buffer for sending data
+
     //===================SELECT FOR MULTI I/O===========================================
     for (;;)
     {
@@ -153,24 +154,29 @@ int main(int argc, char *argv[])
                 if (i == sockfd) // found data from server
                 {
                     // handle data from a client
-                    if ((nbytes = recv(i, buf, sizeof buf, 0)) == -1)
+                    if ((nbytes = recv(i, recieve_buf, sizeof recieve_buf, 0)) == -1)
                     {
                         // no data from server
                         perror("recv");
-                        exit(1);
+                        exit(5);
                     }
 
-                    if (buf[nbytes - 1] == '\n') //ignore newline that's typed when client presses enter
+                    if (recieve_buf[nbytes - 1] == '\n') //ignore newline that's typed when client presses enter
                     {
                         nbytes--;
                     }
-                    buf[nbytes] = '\0';
-                    printf("client: received '%s'\n", buf);
+                    recieve_buf[nbytes] = '\0';
+
+                    printf("client: received '%s'\n", recieve_buf);
                 }
                 else if (i == 0)
                 {
                     // get data using getline, not recv cause stdin isn't a socket
                     int iBytesRead = getline(&buf, &iBytes, stdin);
+                    if (iBytesRead == -1)
+                    {
+                        printf("error: no data read in from getline \n");
+                    }
 
                     // reading data from stdin, need to send to server
                     int len = strlen(buf);
