@@ -27,8 +27,18 @@ private slots:
 
     void UpdateControls();
 
+    void pollClient();
+
+    void EmitError(QString qsError);
+
+    bool isValidIpAddress(QString qs);
+
+    char * qs_to_cp(QString qs);
+
 private:
     Ui::MainWindow *ui;
+
+    int sockfd;
 
     QTimer *timer; //so that pollClient can be called every second
 
