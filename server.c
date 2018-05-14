@@ -20,20 +20,18 @@ struct client
     int fd;            // file descriptor
 };
 
-client create_client(int fd)
+client *create_client(int fd)
 {
-    // TODO: fix this, its returning local memory aka seg fault city
-    struct client new_client; //going to have some trouble allocating here since name is dynamically allocated. 
-
-    new_client.fd = fd;
+    struct client *new_client = (client *)malloc(32);
+    new_client->fd = fd;
     return new_client;
 }
 
-client identify_client(int fd, client client_array[], int fdmax)
+client *identify_client(int fd, client *client_array[], int fdmax)
 {
     for (int k = 0; k <= fdmax; k++)
     {
-        if (client_array[k].fd == fd)
+        if (client_array[k]->fd == fd)
         {
             return client_array[k]; // get current client
         }
@@ -42,13 +40,17 @@ client identify_client(int fd, client client_array[], int fdmax)
     exit(5);
 }
 
-void update_client(int fd, client client_array[], client current_client, int fdmax)
+void update_client(int fd, client *client_array[], client *current_client, int fdmax)
 {
+    printf("1\n");
     for (int k = 0; k <= fdmax; k++)
     {
-        if (client_array[k].fd == fd)
+        printf("2\n");
+        if (client_array[k]->fd == fd)
         {
+            printf("3\n");
             client_array[k] = current_client; // store it again with the updated values
+            break;
         }
     }
 }
@@ -63,7 +65,7 @@ void *get_in_addr(struct sockaddr *sa)
 
 int sendall(int s, char *buf, int len)
 {
-    int total = 0;        // how many bytes we've sent
+    int total = 0;       // how many bytes we've sent
     int bytesleft = len; // how many we have left to send
     int n;
     while (total < len)
@@ -76,7 +78,7 @@ int sendall(int s, char *buf, int len)
         total += n;
         bytesleft -= n;
     }
-    len = total;            // return number actually sent here
+    len = total;             // return number actually sent here
     return n == -1 ? -1 : 0; // return -1 on failure, 0 on success
 }
 
@@ -140,8 +142,8 @@ int main()
 
     int fdmax = listening; // biggest file descriptor
     int i, j;
-    int struct_number = 0;           // keeps track of the how many clients we have
-    struct client client_array[100]; // create our array of clients
+    int client_number = 0;           // keeps track of the how many clients we have
+    struct client *client_array[40]; // create our array of clients
 
     //===================SELECT FOR MULTI I/O===========================================
     for (;;)
@@ -187,9 +189,9 @@ int main()
                                newfd);
 
                         // create a client for this new socket, so that it may be identified again in the future
-                        struct client new_client = create_client(newfd);
-                        client_array[struct_number] = new_client; // append new client to the array
-                        struct_number = struct_number + 1;
+                        struct client *new_client = create_client(newfd);
+                        client_array[client_number] = new_client; // append new client to the array
+                        client_number = client_number + 1;
                     }
                 }
                 else
@@ -217,25 +219,25 @@ int main()
                     {
                         //printf("4\n");
                         char token_buf[1024];
-                        strcpy (token_buf, buf);
+                        strcpy(token_buf, buf);
                         char *command = strtok(token_buf, " "); //strtok returns first split element
 
                         // identifies the socket with the correct structure
-                        struct client current_client = identify_client(i, client_array, fdmax);
-                        printf("client socket = %i \n", current_client.fd);
+                        struct client *current_client = identify_client(i, client_array, fdmax);
+                        printf("client socket = %i \n", current_client->fd);
 
                         // NAME
                         if (!strcmp(command, "NAME")) // string compare if == 0 -> strings are equal
                         {
-                            printf("1client name = %s \n", current_client.name);
+                            printf("1client name = %s \n", current_client->name);
                             printf("COMMAND: %s \n", command);
                             command = strtok(NULL, token_buf); // get to next token, ie the name
                             printf("COMMAND: %s \n", command);
-                            current_client.name = command;
-                            printf("2client name = %s \n", current_client.name);
+                            current_client->name = command;
+                            printf("2client name = %s \n", current_client->name);
                         }
-                        printf("3client name = %s \n", current_client.name);
 
+                        //printf("3client name = %s \n", current_client->name);
                         /*
                         if (strcmp(command, "JOIN")) // JOIN (channel) command
                         {
@@ -262,8 +264,9 @@ int main()
                         */
 
                         // update the struct in the array
+                        printf("update_clinet\n");
                         update_client(i, client_array, current_client, fdmax);
-
+                        printf("finished\n");
                         // check if we can send messages by having a valid NAME and CHANNEL
                         // we got some data from a client
                         for (j = 0; j <= fdmax; j++)
