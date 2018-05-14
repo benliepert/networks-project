@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <cassert>
 
+
 #define PORT "9034"     // the port client will be connecting to
 #define MAXDATASIZE 100 // max number of bytes we can get at once
 
@@ -105,32 +106,6 @@ int connectToServer(char* ip)
 
 int main()
 {
-    // connection established
-
-    //=================================================================================================
-    // TEST STUFF
-
-    /*int n; // declare socket value
-    int send(int sockfd, const void *msg, int len, int flags) (always set flags to 0) - returns #bytes sent out 
-    char* setName = "NAME gay69\r\n";
-    // format with sprintf() later %s 
-    //n = send(sockfd, setName, strlen(setName), 0);
-
-    
-    //Prompt: Create or Join a channel?
-    //        : if they want to join a channel, fetch the list of channels -> LIST command (FIND = LIST)
-    //        else: CREATE a channel, but can't be a name in LIST, so we need to call LIST either way
-    
-
-    char* joinChannel = "JOIN #<Channel>";
-    //format with sprintf() later %s 
-    n = send(sockfd, joinChannel, strlen(joinChannel), 0);
-    */
-    //========================================================================================================
-
-    // only need to listen to one socket this entire time, it's the server's socket.
-    // we want to use select on sockfd, the socket we're using for the server connection,
-    // and STDIN, because that's where we'll get input that we want to send
 
     fd_set master; // master file descriptor list
     FD_ZERO(&master);

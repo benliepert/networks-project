@@ -2,6 +2,8 @@
 #include "ui_mainwindow.h"
 #include "client.h"
 
+#define POLL_MS 500 //how often pollClient() is called
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -11,11 +13,21 @@ MainWindow::MainWindow(QWidget *parent) :
     connected = false;
 
     UpdateControls();
+
+    // timer to call pollClient every however many ms
+    timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), myWidget, SLOT(showGPS()));
+    timer->start(POLL_MS); //time specified in ms
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::pollClient()
+{
+
 }
 
 

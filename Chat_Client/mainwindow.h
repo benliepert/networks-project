@@ -30,6 +30,8 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
+    QTimer *timer; //so that pollClient can be called every second
+
     // button state members
     bool connected;
 };
