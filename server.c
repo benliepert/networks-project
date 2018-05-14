@@ -16,7 +16,7 @@
 struct client
 {
     char *name;        // store this once we get NAME command
-    char *channels[5]; // client's channel(s)?
+    char *channels[5]; // client's channel(s)? TODO maybe make this bigger to allow for larger channel names
     int fd;            // file descriptor
 };
 
@@ -36,7 +36,7 @@ client *identify_client(int fd, client *client_array[], int fdmax)
             return client_array[k]; // get current client
         }
     }
-    printf("failed to find establihsed client");
+    printf("failed to find established client");
     exit(5);
 }
 
