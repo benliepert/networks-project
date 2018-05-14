@@ -44,7 +44,7 @@ void *get_in_addr(struct sockaddr *sa)
     return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
-int main(int argc, char *argv[])
+int connectToServer(char* ip)
 {
     // command line error, will not need later
     if (argc != 2)
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
     // get socket info
     int status;
-    if ((status = getaddrinfo(argv[1], PORT, &hints, &servinfo)) != 0)
+    if ((status = getaddrinfo(ip, PORT, &hints, &servinfo)) != 0)
     {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(status));
         exit(1);
@@ -98,6 +98,13 @@ int main(int argc, char *argv[])
 
     printf("client: connecting to %s\n", s);
     freeaddrinfo(servinfo); // all done with this structure
+
+    return sockfd;
+}
+
+
+int main()
+{
     // connection established
 
     //=================================================================================================
