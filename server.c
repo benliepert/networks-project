@@ -16,13 +16,15 @@
 struct client
 {
     char *name;        // store this once we get NAME command
-    char *channels[5]; // client's channel(s)?
+    char *channels[5]; // client's channel(s)? TODO maybe make this bigger to allow for larger channel names
     int fd;            // file descriptor
 };
 
 client create_client(int fd)
 {
-    struct client new_client;
+    // TODO: fix this, its returning local memory aka seg fault city
+    struct client new_client; //going to have some trouble allocating here since name is dynamically allocated. 
+
     new_client.fd = fd;
     return new_client;
 }
@@ -36,7 +38,7 @@ client identify_client(int fd, client client_array[], int fdmax)
             return client_array[k]; // get current client
         }
     }
-    printf("failed to find establihsed client");
+    printf("failed to find established client");
     exit(5);
 }
 
