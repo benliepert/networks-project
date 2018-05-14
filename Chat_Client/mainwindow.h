@@ -15,8 +15,23 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+private slots:
+
+    void on_pb_send_clicked();
+
+    void on_pb_connect_clicked();
+
+    void on_pb_disconnect_clicked();
+
+    void on_pb_join_clicked();
+
+    void UpdateControls();
+
 private:
     Ui::MainWindow *ui;
+
+    // button state members
+    bool connected;
 };
 
 #endif // MAINWINDOW_H
