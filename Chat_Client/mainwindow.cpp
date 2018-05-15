@@ -8,6 +8,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     connected = false;
+    hasNickname = false;
+    hasChannel = false;
+
 
     UpdateControls();
 }
@@ -50,5 +53,17 @@ void MainWindow::UpdateControls()
     ui->pb_connect->setEnabled(!connected);
     ui->pb_disconnect->setEnabled(connected);
     ui->pb_join->setEnabled(connected);
-    ui->pb_send->setEnabled(connected);
+    ui->pb_send->setEnabled(connected && hasNickname && hasChannel);
+}
+
+void MainWindow::on_le_nickname_textChanged(const QString &arg1)
+{
+    hasNickname = (arg1.length() > 0);
+    UpdateControls();
+}
+
+void MainWindow::on_le_channel_textChanged(const QString &arg1)
+{
+    hasChannel = (arg1.length());
+    UpdateControls();
 }

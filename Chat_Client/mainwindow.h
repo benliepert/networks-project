@@ -27,11 +27,17 @@ private slots:
 
     void UpdateControls();
 
+    void on_le_nickname_textChanged(const QString &arg1);
+
+    void on_le_channel_textChanged(const QString &arg1);
+
 private:
     Ui::MainWindow *ui;
 
     // button state members
     bool connected;
+    bool hasNickname;
+    bool hasChannel;
 };
 
 #endif // MAINWINDOW_H
