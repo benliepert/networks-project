@@ -37,8 +37,7 @@ client *create_client(int fd)
     // new_client->name = "default";
 
     new_client->fd = fd;
-
-    new_client->next = NULL;
+        new_client->next = NULL;
     return new_client;
 }
 
@@ -294,7 +293,7 @@ int main()
                         memset(token_buf, 0, 200);
                         strcpy(token_buf, buf);
                         char *command = strtok(token_buf, " "); //strtok returns first split element
-
+                        
                         // identifies the socket with the correct structure
                         struct client *current_client = identify_client(HEAD, i);
                         printf("client socket = %i \n", current_client->fd);
@@ -303,38 +302,22 @@ int main()
                         if (!strcmp(command, "NAME")) // string compare if == 0 -> strings are equal
                         {
                             printf("1 client name = %s \n", current_client->name);
-                            //printf("COMMAND: %s \n", command);
-
                             char *name = strtok(NULL, token_buf); // get to next token, ie the name
                             printf("COMMAND: %s \n", name);
-
-
-                            //current_client->name = name;
-
                             strcpy(current_client->name, name);
-
-
-                            printf("COMMAND: %s \n", name);
-                            char *newChannel = current_client->channel;
-                            
-                            //current_client->name = name;
-                            //memcpy(current_client->name, name,int 5);
                             printf("2 client name = %s \n", current_client->name);
                         }
 
                         printf("3 client name = %s \n", current_client->name);
+
+                        if (strcmp(command, "ADD")) // ADD (channel) command
+                        {
+                            char *channelName = strtok(NULL, token_buf);
+                            strcpy(current_client->channel, channelName);
+                            printf("CHANNEL: %s \n", current_client->channel);
+                        }
+                        
                         /*
-                        if (strcmp(command, "JOIN")) // JOIN (channel) command
-                        {
-                            // check list of channels -> give client list of channels
-                            // prompt client to choose one
-                        }
-                        else if (strcmp(command, "CREATE")) // CREATE (channel) command
-                        {
-                            // check list of channels against client's channel name
-                            // if no match -> create channel
-                            // otherwise prompt client for another channel name
-                        }
                         else if (strcmp(command[0], "#") && sendMessages) 
                         {
                             // check list of channels against client's channel name
@@ -347,11 +330,14 @@ int main()
                             }
                         }
                         */
-
                         // update the struct in the array
                         //update_client(i, client_array, current_client, fdmax);
                         // check if we can send messages by having a valid NAME and CHANNEL
                         // we got some data from a client
+
+                        /*
+                        Below - only send to structs with current client's channel
+                        */
                         for (j = 0; j <= fdmax; j++)
                         {
                             // send to everyone...
