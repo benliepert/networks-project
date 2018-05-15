@@ -69,6 +69,7 @@ client *identify_client(client * HEAD, int fdTarget)
         {
             return current;
         }
+        current = current->next;
     }
     printf("END OF ID CLIENT\n\n\n");
     return NULL;
@@ -120,6 +121,8 @@ client * append(struct client* HEAD, struct client * newClient)
     if(!HEAD)
     {
         HEAD = newClient;
+        HEAD->next = NULL;
+        return HEAD;
     }
 
     struct client * current;
@@ -130,6 +133,8 @@ client * append(struct client* HEAD, struct client * newClient)
     }
 
     current->next = newClient;
+
+    printf("END OF APPEND CLIENT\n\n\n");
 
     return HEAD;
 }
@@ -299,7 +304,13 @@ int main()
 
                             char *name = strtok(NULL, token_buf); // get to next token, ie the name
                             printf("COMMAND: %s \n", name);
-                            current_client->name = name;
+
+
+                            //current_client->name = name;
+
+                            strcpy(current_client->name, name);
+
+
                             printf("COMMAND: %s \n", name);
                             char *newChannel = current_client->channel;
                             
