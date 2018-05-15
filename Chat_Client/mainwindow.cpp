@@ -16,12 +16,15 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-
     sockfd = -1;
-
     connected = false;
     hasNickname = false;
     hasChannel = false;
+    hasText = false;
+    joinedChannel = false;
+
+    nickname = "";
+    nicknameChanged = false;
 
     UpdateControls();
 
@@ -33,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    if(connected)
+        disconnectFromServer(sockfd);
     delete ui;
 }
 
@@ -40,12 +45,29 @@ void MainWindow::pollClient()
 {
 
 }
-
+void MainWindow::on_pb_nickname_clicked()
+{
+    if(nicknameChanged)
+    {
+        // send a message with the new nickname
+        nickname = ui->le_nickname->text();
+        QString msg = "NAME " + nickname;
+        int len = msg.length();
+        char *cpMes = qs_to_cp(msg);
+        sendall(sockfd, cpMes, &len);
+        nicknameChanged = false;
+        EmitMessage("Nickname set to: "+ nickname);
+    }
+}
 
 void MainWindow::on_pb_send_clicked()
 {
     // read whats in te_send
-    QString message = ui->te_send->toPlainText();
+    QString qsMessage = ui->te_send->toPlainText();
+    int len = qsMessage.length();
+
+    char *cpMessage = qs_to_cp(qsMessage);
+    sendall(sockfd, cpMessage, &len);
 }
 
 void MainWindow::EmitMessage(QString qsError)
@@ -107,6 +129,8 @@ void MainWindow::on_pb_disconnect_clicked()
     EmitMessage("- - - Disconnected from Server - - -");
     sockfd = -1;
     connected = false;
+    joinedChannel = false;
+    nicknameChanged = true;
     UpdateControls();
 }
 
@@ -114,7 +138,14 @@ void MainWindow::on_pb_join_clicked()
 {
     // read whats in le_channel
     // attempt to connect to said channel
-    QString channel = ui->le_channel->text();
+    QString qsChannel = ui->le_channel->text();
+    qsChannel = "ADD "+ qsChannel;
+    int len = qsChannel.length();
+    char * cpChannel = qs_to_cp(qsChannel);
+
+    sendall(sockfd, cpChannel, &len);
+    joinedChannel = true;
+    UpdateControls();
 }
 
 void MainWindow::UpdateControls()
@@ -123,17 +154,27 @@ void MainWindow::UpdateControls()
     ui->pb_connect->setEnabled(!connected);
     ui->pb_disconnect->setEnabled(connected);
     ui->pb_join->setEnabled(connected);
-    ui->pb_send->setEnabled(connected && hasNickname && hasChannel);
+    ui->pb_send->setEnabled(connected && hasNickname && hasChannel && hasText && joinedChannel);
+    ui->pb_nickname->setEnabled(connected && hasNickname && hasChannel && joinedChannel);
 }
 
 void MainWindow::on_le_nickname_textChanged(const QString &arg1)
 {
     hasNickname = (arg1.length() > 0);
+
+    nicknameChanged = (arg1 != nickname);
+
     UpdateControls();
 }
 
 void MainWindow::on_le_channel_textChanged(const QString &arg1)
 {
-    hasChannel = (arg1.length());
+    hasChannel = (arg1.length() > 0);
+    UpdateControls();
+}
+
+void MainWindow::on_te_send_textChanged()
+{
+    hasText = (ui->te_send->toPlainText().length() > 0);
     UpdateControls();
 }

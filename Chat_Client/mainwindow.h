@@ -40,6 +40,9 @@ private slots:
 
     void on_le_channel_textChanged(const QString &arg1);
 
+    void on_te_send_textChanged();
+
+    void on_pb_nickname_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -53,6 +56,10 @@ private:
 
     bool hasNickname;
     bool hasChannel;
+    bool nicknameChanged;
+    bool hasText;
+    bool joinedChannel;
+    QString nickname;
 };
 
 #endif // MAINWINDOW_H
