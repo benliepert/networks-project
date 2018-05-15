@@ -16,10 +16,10 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    connected = false;
 
     sockfd = -1;
 
+    connected = false;
     hasNickname = false;
     hasChannel = false;
 
@@ -52,6 +52,7 @@ void MainWindow::EmitMessage(QString qsError)
 {
     ui->tb_chat->append(qsError);
 }
+
 bool MainWindow::isValidIpAddress(QString qs)
 {
     struct sockaddr_in sa;
@@ -67,6 +68,9 @@ char * MainWindow::qs_to_cp(QString qs)
 
 void MainWindow::on_pb_connect_clicked()
 {
+    if(connected)
+        return;
+
     //read whats in le_server
     //connect to said server
     QString qsServerIP = ui->le_server->text();
@@ -88,15 +92,22 @@ void MainWindow::on_pb_connect_clicked()
             EmitMessage("- - - Error: Failed to connect! - - -");
         default:
             EmitMessage("- - - Client successfully connected to: " + qsServerIP);
+            connected = true;
 
     }
+    UpdateControls();
 }
 
 void MainWindow::on_pb_disconnect_clicked()
 {
+    if(!connected)
+        return;
     // disconnect from server
-    disconnectFromServer();
+    disconnectFromServer(sockfd);
+    EmitMessage("- - - Disconnected from Server - - -");
     sockfd = -1;
+    connected = false;
+    UpdateControls();
 }
 
 void MainWindow::on_pb_join_clicked()
