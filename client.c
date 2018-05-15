@@ -100,6 +100,7 @@ int connectToServer(const char* ip)
 int disconnectFromServer(int sockfd)
 {
     close(sockfd);
+    return 0;
 }
 
 
