@@ -44,6 +44,9 @@ private:
 
     // button state members
     bool connected;
+
+    bool hasNickname;
+    bool hasChannel;
 };
 
 #endif // MAINWINDOW_H
