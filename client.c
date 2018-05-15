@@ -59,7 +59,7 @@ int connectToServer(const char* ip)
     if ((status = getaddrinfo(ip, PORT, &hints, &servinfo)) != 0)
     {
         // 
-        return -2;
+        return -1;
     }
 
     // loop through all the results and connect to the first we can
@@ -82,7 +82,7 @@ int connectToServer(const char* ip)
     }
     if (p == NULL)
     {
-        return -3; // failed to connect
+        return -2; // failed to connect
         //fprintf(stderr, "client: failed to connect\n");
         //exit(2);
     }
@@ -95,6 +95,11 @@ int connectToServer(const char* ip)
     freeaddrinfo(servinfo); // all done with this structure
 
     return sockfd;
+}
+
+int disconnectFromServer(int sockfd)
+{
+    close(sockfd);
 }
 
 
@@ -143,7 +148,7 @@ int connectToServer(const char* ip)
 //                     }
 //                     recieve_buf[nbytes] = '\0';
 
-//                     printf("client: received '%s'\n", recieve_buf);
+//                     printf("clienqDebug() << "POLL CLIENT" << endl;t: received '%s'\n", recieve_buf);
 //                 }
 //                 else if (i == 0)
 //                 {

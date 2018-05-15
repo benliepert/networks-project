@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QString>
 #include <QByteArray>
+#include <assert.h>
 
 #define POLL_MS 500 //how often pollClient() is called
 
@@ -33,7 +34,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::pollClient()
 {
-   qDebug() << "POLL CLIENT" << endl;
+
 }
 
 
@@ -43,7 +44,7 @@ void MainWindow::on_pb_send_clicked()
     QString message = ui->te_send->toPlainText();
 }
 
-void MainWindow::EmitError(QString qsError)
+void MainWindow::EmitMessage(QString qsError)
 {
     ui->tb_chat->append(qsError);
 }
@@ -69,7 +70,7 @@ void MainWindow::on_pb_connect_clicked()
     char * cpServerIP = qs_to_cp(qsServerIP);
     if(!isValidIpAddress(qsServerIP))
     {
-        EmitError("- - - Error: Please enter a valid IP - - -");
+        EmitMessage("- - - Error: Please enter a valid IP - - -");
         return;
     }
 
@@ -77,24 +78,21 @@ void MainWindow::on_pb_connect_clicked()
 
     switch(sockfd)
     {
+        case -1:
+            EmitMessage("- - - Error: Failed to get address info! - - -");
         case -2:
-            EmitError("- - - Error: Failed to get address info! - - -");
-        case -3:
-            EmitError("- - - Error: Failed to connect! - - -");
+            EmitMessage("- - - Error: Failed to connect! - - -");
+        default:
+            EmitMessage("- - - Client successfully connected to: " + qsServerIP);
+
     }
-
-//    if(sockfd == -3)
-//    {
-//        EmitError("- - - Error: Failed to connect! - - -");
-//    }
-//    else
-
-
 }
 
 void MainWindow::on_pb_disconnect_clicked()
 {
     // disconnect from server
+    disconnectFromServer();
+    sockfd = -1;
 }
 
 void MainWindow::on_pb_join_clicked()

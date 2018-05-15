@@ -29,7 +29,7 @@ private slots:
 
     void pollClient();
 
-    void EmitError(QString qsError);
+    void EmitMessage(QString qsError);
 
     bool isValidIpAddress(QString qs);
 
