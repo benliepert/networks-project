@@ -262,6 +262,8 @@ int main()
                     //printf("3\n");
                     // handle data from a client
                     char buf[9999]; // buffer for client data
+                    memset(buf, 0, 9999);
+
                     int nbytes;
                     if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0)
                     {
@@ -288,7 +290,8 @@ int main()
                         }
                         */
 
-                        char token_buf[9999];
+                        char token_buf[200];
+                        memset(token_buf, 0, 200);
                         strcpy(token_buf, buf);
                         char *command = strtok(token_buf, " "); //strtok returns first split element
 
