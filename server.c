@@ -15,44 +15,68 @@
 
 struct client
 {
-    char *name;        // store this once we get NAME command
-    char *channels[5]; // client's channel(s)? TODO maybe make this bigger to allow for larger channel names
-    int fd;            // file descriptor
+    char *name;    // store this once we get NAME command
+    char *channel; // client's channel(s)? TODO maybe make this bigger to allow for larger channel names
+    int fd;        // file descriptor
+
+    struct client *next;
 };
 
 client *create_client(int fd)
 {
-    struct client *new_client = (client *)malloc(32);
+    printf("CREATING CLIENT\n");
+    // set default names to this
+    char *n = (char *)"defaultdefaultdefaultdefault";
+
+    // create client and malloc space for its values
+    struct client *new_client = (client *)malloc(sizeof(client));
+    new_client->name = (char *)malloc((strlen(n) + 1) * sizeof(char));
+    new_client->channel = (char *)malloc((strlen(n) + 1) * sizeof(char));
+
+    // set default values
+    strcpy(new_client->name, n);
+    strcpy(new_client->channel, n);
     new_client->fd = fd;
+    new_client->next = NULL;
+
     return new_client;
 }
 
-client *identify_client(int fd, client *client_array[], int fdmax)
+client *identify_client(client *HEAD, int fdTarget)
 {
-    for (int k = 0; k <= fdmax; k++)
+    // take a file descripter and return * to client with that FD, NULL if not found
+    printf("IDENTIFYING CLIENT\n");
+    struct client *current = HEAD;
+    while (current)
     {
-        if (client_array[k]->fd == fd)
+        if (current->fd == fdTarget)
         {
-            return client_array[k]; // get current client
+            return current;
         }
+        current = current->next;
     }
-    printf("failed to find established client");
-    exit(5);
+    printf("END OF ID CLIENT\n\n\n");
+    return NULL;
 }
 
-void update_client(int fd, client *client_array[], client *current_client, int fdmax)
+bool valid_user(client *current_client)
 {
-    printf("1\n");
-    for (int k = 0; k <= fdmax; k++)
+    // to check against the defualt values
+    char *n = (char *)"defaultdefaultdefaultdefault";
+    //printf("name is: %s \n", current_client->name);
+    //printf("channel is: %s \n", current_client->channel);
+    if (!strcmp(current_client->name, n))
     {
-        printf("2\n");
-        if (client_array[k]->fd == fd)
-        {
-            printf("3\n");
-            client_array[k] = current_client; // store it again with the updated values
-            break;
-        }
+        printf("works\n");
+        printf("please set a valid username\n");
+        return false;
     }
+    if (!strcmp(current_client->channel, n))
+    {
+        printf("please set a valid channel\n");
+        return false;
+    }
+    return true;
 }
 
 void *get_in_addr(struct sockaddr *sa)
@@ -80,6 +104,31 @@ int sendall(int s, char *buf, int len)
     }
     len = total;             // return number actually sent here
     return n == -1 ? -1 : 0; // return -1 on failure, 0 on success
+}
+
+client *append(struct client *HEAD, struct client *newClient)
+{
+    printf("APPENDING CLIENT\n");
+    // could pass in head by reference
+    if (!HEAD)
+    {
+        HEAD = newClient;
+        HEAD->next = NULL;
+        return HEAD;
+    }
+
+    struct client *current;
+    current = HEAD;
+    while (current->next)
+    {
+        current = current->next;
+    }
+
+    current->next = newClient;
+
+    printf("END OF APPEND CLIENT\n\n\n");
+
+    return HEAD;
 }
 
 int main()
@@ -142,10 +191,13 @@ int main()
 
     int fdmax = listening; // biggest file descriptor
     int i, j;
-    int client_number = 0;           // keeps track of the how many clients we have
-    struct client *client_array[40]; // create our array of clients
+    int client_number = 0; // keeps track of the how many clients we have
+
+    //struct client *client_array[40]; // create our array of clients
+    struct client *HEAD = NULL;
 
     //===================SELECT FOR MULTI I/O===========================================
+    printf("RUNNING SELECT\n");
     for (;;)
     {
         fd_set copy = master;
@@ -189,8 +241,9 @@ int main()
                                newfd);
 
                         // create a client for this new socket, so that it may be identified again in the future
-                        struct client *new_client = create_client(newfd);
-                        client_array[client_number] = new_client; // append new client to the array
+                        struct client *new_client;
+                        new_client = create_client(newfd);
+                        HEAD = append(HEAD, new_client); //adding a connection, append the new struct
                         client_number = client_number + 1;
                     }
                 }
@@ -198,7 +251,9 @@ int main()
                 {
                     //printf("3\n");
                     // handle data from a client
-                    char buf[1024]; // buffer for client data
+                    char buf[9999]; // buffer for client data
+                    memset(buf, 0, 9999);
+
                     int nbytes;
                     if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0)
                     {
@@ -218,38 +273,33 @@ int main()
                     else
                     {
                         //printf("4\n");
-                        char token_buf[1024];
+                        // create tokenized buffer
+                        char token_buf[200];
+                        memset(token_buf, 0, 200);
                         strcpy(token_buf, buf);
                         char *command = strtok(token_buf, " "); //strtok returns first split element
 
                         // identifies the socket with the correct structure
-                        struct client *current_client = identify_client(i, client_array, fdmax);
+                        struct client *current_client = identify_client(HEAD, i);
                         printf("client socket = %i \n", current_client->fd);
 
-                        // NAME
+                        // set name
                         if (!strcmp(command, "NAME")) // string compare if == 0 -> strings are equal
                         {
-                            printf("1client name = %s \n", current_client->name);
-                            printf("COMMAND: %s \n", command);
-                            command = strtok(NULL, token_buf); // get to next token, ie the name
-                            printf("COMMAND: %s \n", command);
-                            current_client->name = command;
-                            printf("2client name = %s \n", current_client->name);
+                            char *name = strtok(NULL, token_buf); // get to next token, ie the name
+                            strcpy(current_client->name, name);
+                            printf("client name set as = %s \n", current_client->name);
                         }
-
-                        //printf("3client name = %s \n", current_client->name);
+                        printf("client name set to: %s \n", current_client->name);
+                        // set channel
+                        if (!strcmp(command, "ADD")) // ADD (channel) command
+                        {
+                            char *channelName = strtok(NULL, token_buf);
+                            strcpy(current_client->channel, channelName);
+                            printf("channel set to: %s \n", current_client->channel);
+                        }
+                        printf("channel set to: %s \n", current_client->channel);
                         /*
-                        if (strcmp(command, "JOIN")) // JOIN (channel) command
-                        {
-                            // check list of channels -> give client list of channels
-                            // prompt client to choose one
-                        }
-                        else if (strcmp(command, "CREATE")) // CREATE (channel) command
-                        {
-                            // check list of channels against client's channel name
-                            // if no match -> create channel
-                            // otherwise prompt client for another channel name
-                        }
                         else if (strcmp(command[0], "#") && sendMessages) 
                         {
                             // check list of channels against client's channel name
@@ -263,23 +313,33 @@ int main()
                         }
                         */
 
-                        // update the struct in the array
-                        printf("update_clinet\n");
-                        update_client(i, client_array, current_client, fdmax);
-                        printf("finished\n");
-                        // check if we can send messages by having a valid NAME and CHANNEL
-                        // we got some data from a client
-                        for (j = 0; j <= fdmax; j++)
+                        /*
+                        Below - only send to structs with current client's channel
+                        */
+
+                        /* struct client *current = HEAD;
+                        while (current)
                         {
-                            // send to everyone...
-                            if (FD_ISSET(j, &master))
+                            if (current->fd == fdTarget)
                             {
-                                // except the listening and ourselves
-                                if (j != listening && j != i)
+                                return current;
+                            }
+                            current = current->next;
+                        }*/
+                        if (valid_user(current_client))
+                        {
+                            for (j = 0; j <= fdmax; j++)
+                            {
+                                // send to everyone...
+                                if (FD_ISSET(j, &master))
                                 {
-                                    if (sendall(j, buf, nbytes) == -1)
+                                    // except the listening and ourselves
+                                    if (j != listening && j != i)
                                     {
-                                        perror("send");
+                                        if (sendall(j, buf, nbytes) == -1)
+                                        {
+                                            perror("send");
+                                        }
                                     }
                                 }
                             }

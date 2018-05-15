@@ -6,17 +6,30 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>867</width>
-    <height>623</height>
+    <width>938</width>
+    <height>651</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>I bought an '83 cutlass for the weekend</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_7">
+   <layout class="QHBoxLayout" name="horizontalLayout_5">
     <item>
      <layout class="QGridLayout" name="gridLayout">
+      <item row="2" column="0">
+       <widget class="QSplitter" name="splitter">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <widget class="QTextEdit" name="te_send"/>
+        <widget class="QPushButton" name="pb_send">
+         <property name="text">
+          <string>Send</string>
+         </property>
+        </widget>
+       </widget>
+      </item>
       <item row="0" column="0">
        <layout class="QHBoxLayout" name="horizontalLayout_4">
         <item>
@@ -52,19 +65,6 @@
       <item row="1" column="0">
        <widget class="QTextBrowser" name="tb_chat"/>
       </item>
-      <item row="2" column="0">
-       <widget class="QSplitter" name="splitter">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <widget class="QTextEdit" name="te_send"/>
-        <widget class="QPushButton" name="pb_send">
-         <property name="text">
-          <string>Send</string>
-         </property>
-        </widget>
-       </widget>
-      </item>
      </layout>
     </item>
     <item>
@@ -91,69 +91,51 @@
        </layout>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_5">
-        <item>
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Members:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
       </item>
       <item>
-       <widget class="QTextBrowser" name="tb_members"/>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_6">
-        <item>
-         <widget class="QPushButton" name="pb_connect">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>40</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(138, 226, 52);
+       <widget class="QPushButton" name="pb_connect">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>40</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(138, 226, 52);
 font: 57 15pt &quot;Ubuntu&quot;;</string>
-          </property>
-          <property name="text">
-           <string>Connect</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pb_disconnect">
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>40</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">color: rgb(239, 41, 41);
+        </property>
+        <property name="text">
+         <string>Connect</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pb_disconnect">
+        <property name="minimumSize">
+         <size>
+          <width>100</width>
+          <height>40</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(239, 41, 41);
 font: 57 11pt &quot;Ubuntu&quot;;</string>
-          </property>
-          <property name="text">
-           <string>Disconnect</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+        </property>
+        <property name="text">
+         <string>Disconnect</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>

@@ -17,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     connected = false;
+
     sockfd = -1;
 
     hasNickname = false;

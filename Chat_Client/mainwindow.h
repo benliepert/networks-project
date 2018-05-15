@@ -27,6 +27,7 @@ private slots:
 
     void UpdateControls();
 
+
     void pollClient();
 
     void EmitMessage(QString qsError);
@@ -34,6 +35,11 @@ private slots:
     bool isValidIpAddress(QString qs);
 
     char * qs_to_cp(QString qs);
+
+    void on_le_nickname_textChanged(const QString &arg1);
+
+    void on_le_channel_textChanged(const QString &arg1);
+
 
 private:
     Ui::MainWindow *ui;
