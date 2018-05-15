@@ -1,5 +1,14 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "client.c"
+#include <arpa/inet.h>
+#include <QTimer>
+#include <QDebug>
+#include <QString>
+#include <QByteArray>
+#include <assert.h>
+
+#define POLL_MS 500 //how often pollClient() is called
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -8,11 +17,18 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     connected = false;
+
+    sockfd = -1;
+
     hasNickname = false;
     hasChannel = false;
 
-
     UpdateControls();
+
+    // timer to call pollClient every however many ms
+    timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(pollClient()));
+    timer->start(POLL_MS); //time specified in ms
 }
 
 MainWindow::~MainWindow()
@@ -20,6 +36,10 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::pollClient()
+{
+
+}
 
 
 void MainWindow::on_pb_send_clicked()
@@ -28,16 +48,55 @@ void MainWindow::on_pb_send_clicked()
     QString message = ui->te_send->toPlainText();
 }
 
+void MainWindow::EmitMessage(QString qsError)
+{
+    ui->tb_chat->append(qsError);
+}
+bool MainWindow::isValidIpAddress(QString qs)
+{
+    struct sockaddr_in sa;
+    int result = inet_pton(AF_INET, qs_to_cp(qs), &(sa.sin_addr));
+    return result != 0;
+}
+
+char * MainWindow::qs_to_cp(QString qs)
+{
+    QByteArray ba = qs.toLatin1();
+    return ba.data();
+}
+
 void MainWindow::on_pb_connect_clicked()
 {
     //read whats in le_server
     //connect to said server
-    QString server = ui->le_server->text();
+    QString qsServerIP = ui->le_server->text();
+
+    char * cpServerIP = qs_to_cp(qsServerIP);
+    if(!isValidIpAddress(qsServerIP))
+    {
+        EmitMessage("- - - Error: Please enter a valid IP - - -");
+        return;
+    }
+
+    sockfd = connectToServer(cpServerIP);
+
+    switch(sockfd)
+    {
+        case -1:
+            EmitMessage("- - - Error: Failed to get address info! - - -");
+        case -2:
+            EmitMessage("- - - Error: Failed to connect! - - -");
+        default:
+            EmitMessage("- - - Client successfully connected to: " + qsServerIP);
+
+    }
 }
 
 void MainWindow::on_pb_disconnect_clicked()
 {
     // disconnect from server
+    disconnectFromServer();
+    sockfd = -1;
 }
 
 void MainWindow::on_pb_join_clicked()
